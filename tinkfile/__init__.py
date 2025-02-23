@@ -64,6 +64,9 @@ class TinkFile(EncryptFile):
 
 
 class TinkCryptor(Cryptor):
+    """
+    From https://github.com/tink-crypto/tink-py/blob/main/examples/cleartext_keyset/cleartext_keyset_cli.py
+    """
 
     @reify
     def _imp_tink(cls):
