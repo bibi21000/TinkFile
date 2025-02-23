@@ -11,8 +11,6 @@ __email__ = 'bibi21000@gmail.com'
 
 __all__ = ["TinkCryptor", "TinkFile", "open"]
 
-import os
-
 from cofferfile import EncryptFile, Cryptor, _open_t
 from cofferfile import WRITE_BUFFER_SIZE, CHUNK_SIZE, READ, WRITE, APPEND, EXCLUSIVE # noqa F401
 from cofferfile.decorator import reify

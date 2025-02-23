@@ -5,14 +5,11 @@
 __author__ = 'bibi21000 aka Sébastien GALLET'
 __email__ = 'bibi21000@gmail.com'
 
-import os
-import sys
-import io
 import tarfile
 
 from cofferfile import _open_cls
 from . import CHUNK_SIZE, READ, WRITE, APPEND, EXCLUSIVE # noqa F401
-from .zstd import TinkFile as ZstdTinkFile, CParameter, DParameter
+from .zstd import TinkFile as ZstdTinkFile
 
 
 class TarFile(tarfile.TarFile):

@@ -6,11 +6,8 @@ It uses the multithreaded ZSTD compressor.
 __author__ = 'bibi21000 aka Sébastien GALLET'
 __email__ = 'bibi21000@gmail.com'
 
-import os
-import sys
-import io
+
 import pyzstd
-from pyzstd import ZstdFile
 from pyzstd import CParameter, DParameter # noqa F401
 
 from cofferfile import _open_cls
