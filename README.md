@@ -1,6 +1,6 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/bibi21000/TinkFile/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/bibi21000/TinkFile/tree/main)
 [![codecov](https://codecov.io/gh/bibi21000/TinkFile/graph/badge.svg?token=4124GIOJAK)](https://codecov.io/gh/bibi21000/TinkFile)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/aesfile)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/tinkfile)
 
 # TinkFile
 
@@ -16,15 +16,23 @@ look at PyCoffer : https://github.com/bibi21000/PyCoffer.
 ## Install
 
 ```
-    pip install aesfile
+    pip install tinkfile
 ```
 
-## Create your encryption key
+## Create your encryption key in json format
 
 ```
-    from Crypto.Random import get_random_bytes
+    import tink
+    from tink import aead
+    from tink import secret_key_access
 
-    key = get_random_bytes(16)
+    aead.register()
+    key_template = aead.aead_key_templates.AES128_GCM
+    keyset_handle = tink.new_keyset_handle(key_template)
+    key = tink.json_proto_keyset_format.serialize(
+            keyset_handle, secret_key_access.TOKEN
+        )
+
 ```
 and store it in a safe place (disk, database, ...).
 
@@ -36,46 +44,46 @@ Losing this key means losing the data.
 Text files :
 
 ```
-    import aesfile
+    import tinkfile
 
-    with aesfile.open('test.txc', mode='wt', aes_key=key, encoding="utf-8") as ff:
+    with tinkfile.open('test.txc', mode='wt', tink_key=key, encoding="utf-8") as ff:
         ff.write(data)
 
-    with aesfile.open('test.txc', "rt", aes_key=key, encoding="utf-8") as ff:
+    with tinkfile.open('test.txc', "rt", tink_key=key, encoding="utf-8") as ff:
         data = ff.read()
 
-    with aesfile.open('test.txc', mode='wt', aes_key=key, encoding="utf-8") as ff:
+    with tinkfile.open('test.txc', mode='wt', tink_key=key, encoding="utf-8") as ff:
         ff.writelines(data)
 
-    with aesfile.open('test.txc', "rt", aes_key=key, encoding="utf-8") as ff:
+    with tinkfile.open('test.txc', "rt", tink_key=key, encoding="utf-8") as ff:
         data = ff.readlines()
 ```
 
 Binary files :
 
 ```
-    import aesfile
+    import tinkfile
 
-    with aesfile.open('test.dac', mode='wb', aes_key=key) as ff:
+    with tinkfile.open('test.dac', mode='wb', tink_key=key) as ff:
         ff.write(data)
 
-    with aesfile.open('test.dac', "rb", aes_key=key) as ff:
+    with tinkfile.open('test.dac', "rb", tink_key=key) as ff:
         data = ff.read()
 ```
 
 ## Or compress and crypt them with pyzstd
 
 ```
-    pip install aesfile[zstd]
+    pip install tinkfile[zstd]
 ```
 
 ```
-    from aesfile.zstd import TinkFile
+    from tinkfile.zstd import TinkFile
 
-    with TinkFile('test.dac', mode='wb', aes_key=key) as ff:
+    with TinkFile('test.dac', mode='wb', tink_key=key) as ff:
         ff.write(data)
 
-    with TinkFile('test.dac', mode='rb', aes_key=key) as ff:
+    with TinkFile('test.dac', mode='rb', tink_key=key) as ff:
         data = ff.read()
 ```
 
@@ -84,10 +92,10 @@ Binary files :
 ```
 class TarBz2TinkFile(tarfile.TarFile):
 
-    def __init__(self, name, mode='r', aes_key=None, chunk_size=aesfile.CHUNK_SIZE, **kwargs):
+    def __init__(self, name, mode='r', tink_key=None, chunk_size=tinkfile.CHUNK_SIZE, **kwargs):
         compresslevel = kwargs.pop('compresslevel', 9)
-        self.fernet_file = aesfile.TinkFile(name, mode,
-            aes_key=aes_key, chunk_size=chunk_size, **kwargs)
+        self.fernet_file = tinkfile.TinkFile(name, mode,
+            tink_key=tink_key, chunk_size=chunk_size, **kwargs)
         try:
             self.bz2_file = bz2.BZ2File(self.fernet_file, mode=mode,
                 compresslevel=compresslevel, **kwargs)
@@ -113,11 +121,11 @@ class TarBz2TinkFile(tarfile.TarFile):
                 if self.fernet_file is not None:
                     self.fernet_file.close()
 
-    with TarBz2TinkFile('test.zsc', mode='wb', aes_key=key) as ff:
+    with TarBz2TinkFile('test.zsc', mode='wb', tink_key=key) as ff:
         ff.add(dataf1, 'file1.out')
         ff.add(dataf2, 'file2.out')
 
-    with TarBz2TinkFile('test.zsc', mode='rb', aes_key=key) as ff:
+    with TarBz2TinkFile('test.zsc', mode='rb', tink_key=key) as ff:
         fdata1 = ff.extractfile('file1.out')
         fdata2 = ff.extractfile('file2.out')
 ```
@@ -126,9 +134,9 @@ class TarBz2TinkFile(tarfile.TarFile):
 
 Encrypt :
 ```
-    import aesfile
+    import tinkfile
 
-    with open(source, 'rb') as fin, aesfile.open(destination, mode='wb', aes_key=key) as fout:
+    with open(source, 'rb') as fin, tinkfile.open(destination, mode='wb', tink_key=key) as fout:
         while True:
             data = fin.read(7777)
             if not data:
@@ -138,9 +146,9 @@ Encrypt :
 
 Decrypt :
 ```
-    import aesfile
+    import tinkfile
 
-    with aesfile.open(source, mode='rb', aes_key=key) as fin, open(destination, 'wb') as fout :
+    with tinkfile.open(source, mode='rb', tink_key=key) as fin, open(destination, 'wb') as fout :
         while True:
             data = fin.read(8888)
             if not data:
@@ -151,16 +159,16 @@ Decrypt :
 Or to compress and crypt
 
 ```
-    import aesfile.zstd
+    import tinkfile.zstd
 
-    with open(source, 'rb') as fin, aesfile.zstd.open(destination, mode='wb', aes_key=key) as fout:
+    with open(source, 'rb') as fin, tinkfile.zstd.open(destination, mode='wb', tink_key=key) as fout:
         while True:
             data = fin.read(7777)
             if not data:
                 break
             fout.write(data)
 
-    with aesfile.zstd.open(source, mode='rb', aes_key=key) as fin, open(destination, 'wb') as fout :
+    with tinkfile.zstd.open(source, mode='rb', tink_key=key) as fin, open(destination, 'wb') as fout :
         while True:
             data = fin.read(8888)
             if not data:
