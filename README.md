@@ -94,10 +94,10 @@ class TarBz2TinkFile(tarfile.TarFile):
 
     def __init__(self, name, mode='r', tink_key=None, chunk_size=tinkfile.CHUNK_SIZE, **kwargs):
         compresslevel = kwargs.pop('compresslevel', 9)
-        self.fernet_file = tinkfile.TinkFile(name, mode,
+        self.tink_file = tinkfile.TinkFile(name, mode,
             tink_key=tink_key, chunk_size=chunk_size, **kwargs)
         try:
-            self.bz2_file = bz2.BZ2File(self.fernet_file, mode=mode,
+            self.bz2_file = bz2.BZ2File(self.tink_file, mode=mode,
                 compresslevel=compresslevel, **kwargs)
             try:
                 super().__init__(fileobj=self.bz2_file, mode=mode, **kwargs)
@@ -107,7 +107,7 @@ class TarBz2TinkFile(tarfile.TarFile):
                 raise
 
         except Exception:
-            self.fernet_file.close()
+            self.tink_file.close()
             raise
 
     def close(self):
@@ -115,11 +115,11 @@ class TarBz2TinkFile(tarfile.TarFile):
             super().close()
         finally:
             try:
-                if self.fernet_file is not None:
+                if self.tink_file is not None:
                     self.bz2_file.close()
             finally:
-                if self.fernet_file is not None:
-                    self.fernet_file.close()
+                if self.tink_file is not None:
+                    self.tink_file.close()
 
     with TarBz2TinkFile('test.zsc', mode='wb', tink_key=key) as ff:
         ff.add(dataf1, 'file1.out')

@@ -13,3 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Removed
 
+
+## [0.0.2] - 2025/02/24
+
+### Added
+
+- Initial import
+
