@@ -95,10 +95,11 @@ class TinkCryptor(Cryptor):
         )
         self.cipher = keyset_handle.primitive(self._imp_tink_aead.Aead)
 
+    @classmethod
     def derive(self, password, salt=None, key_len=64, N=2 ** 14, r=8, p=1, num_keys=1):
         """Derive a key from password (experimental)
         """
-        return None
+        return salt, None
 
     def _decrypt(self, chunk):
         return self.cipher.decrypt(chunk, b'envelope_chunk')

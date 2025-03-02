@@ -90,7 +90,7 @@ tinkfile    </h1>
 <h1 id="tinkfile">TinkFile</h1>
 
 <p>A python xxxFile like (ie TarFile, GzipFile, BZ2File, pyzstd.ZstdFile, ...)
-for encrypting files with cryptography Tink.</p>
+for encrypting files with cryptography Tink (experimental).</p>
 
 <p>This project is part of the CofferFile : <a href="https://github.com/bibi21000/CofferFile">https://github.com/bibi21000/CofferFile</a></p>
 
@@ -172,10 +172,10 @@ Losing this key means losing the data.</p>
 
     def __init__(self, name, mode='r', tink_key=None, chunk_size=tinkfile.CHUNK_SIZE, **kwargs):
         compresslevel = kwargs.pop('compresslevel', 9)
-        self.fernet_file = <a href="#TinkFile">tinkfile.TinkFile</a>(name, mode,
+        self.tink_file = <a href="#TinkFile">tinkfile.TinkFile</a>(name, mode,
             tink_key=tink_key, chunk_size=chunk_size, **kwargs)
         try:
-            self.bz2_file = bz2.BZ2File(self.fernet_file, mode=mode,
+            self.bz2_file = bz2.BZ2File(self.tink_file, mode=mode,
                 compresslevel=compresslevel, **kwargs)
             try:
                 super().__init__(fileobj=self.bz2_file, mode=mode, **kwargs)
@@ -185,7 +185,7 @@ Losing this key means losing the data.</p>
                 raise
 
         except Exception:
-            self.fernet_file.close()
+            self.tink_file.close()
             raise
 
     def close(self):
@@ -193,11 +193,11 @@ Losing this key means losing the data.</p>
             super().close()
         finally:
             try:
-                if self.fernet_file is not None:
+                if self.tink_file is not None:
                     self.bz2_file.close()
             finally:
-                if self.fernet_file is not None:
-                    self.fernet_file.close()
+                if self.tink_file is not None:
+                    self.tink_file.close()
 
     with TarBz2TinkFile('test.zsc', mode='wb', tink_key=key) as ff:
         ff.add(dataf1, 'file1.out')
@@ -357,44 +357,45 @@ Losing this key means losing the data.</p>
 </span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a>        <span class="p">)</span>
 </span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span> <span class="o">=</span> <span class="n">keyset_handle</span><span class="o">.</span><span class="n">primitive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_imp_tink_aead</span><span class="o">.</span><span class="n">Aead</span><span class="p">)</span>
 </span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">derive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">key_len</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">14</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_keys</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Derive a key from password (experimental)</span>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>        <span class="k">return</span> <span class="kc">None</span>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
-</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;envelope_chunk&#39;</span><span class="p">)</span>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
-</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;envelope_chunk&#39;</span><span class="p">)</span>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">tink_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a>         <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>         <span class="n">chunk_size</span><span class="o">=</span><span class="n">CHUNK_SIZE</span><span class="p">):</span>
-</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a Tink file in binary or text mode.</span>
-</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a>
-</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="sd">    The filename argument can be an actual filename (a str or bytes object), or</span>
-</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a><span class="sd">    an existing file object to read from or write to.</span>
-</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>
-</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a><span class="sd">    The mode argument can be &quot;r&quot;, &quot;rb&quot;, &quot;w&quot;, &quot;wb&quot;, &quot;x&quot;, &quot;xb&quot;, &quot;a&quot; or &quot;ab&quot; for</span>
-</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="sd">    binary mode, or &quot;rt&quot;, &quot;wt&quot;, &quot;xt&quot; or &quot;at&quot; for text mode. The default mode is</span>
-</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="sd">    &quot;rb&quot;.</span>
-</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a>
-</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a><span class="sd">    For binary mode, this function is equivalent to the TinkFile constructor:</span>
-</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="sd">    TinkFile(filename, mode, tink_key). In this case, the encoding, errors</span>
-</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="sd">    and newline arguments must not be provided.</span>
-</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a>
-</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a><span class="sd">    For text mode, a TinkFile object is created, and wrapped in an</span>
-</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="sd">    io.TextIOWrapper instance with the specified encoding, error handling</span>
-</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a><span class="sd">    behavior, and line ending(s).</span>
-</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a>
-</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a><span class="sd">    Encryption is done by chunks to reduce memory footprint. The default</span>
-</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="sd">    chunk_size is 64KB.</span>
-</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a>    <span class="k">return</span> <span class="n">_open_t</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
-</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>         <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="n">newline</span><span class="p">,</span>
-</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>         <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
-</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>         <span class="n">cryptor</span><span class="o">=</span><span class="s1">&#39;tink&#39;</span><span class="p">,</span> <span class="n">tink_key</span><span class="o">=</span><span class="n">tink_key</span><span class="p">)</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a>    <span class="nd">@classmethod</span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">derive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">key_len</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">14</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_keys</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Derive a key from password (experimental)</span>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a>        <span class="k">return</span> <span class="n">salt</span><span class="p">,</span> <span class="kc">None</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;envelope_chunk&#39;</span><span class="p">)</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;envelope_chunk&#39;</span><span class="p">)</span>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">tink_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>         <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a>         <span class="n">chunk_size</span><span class="o">=</span><span class="n">CHUNK_SIZE</span><span class="p">):</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a Tink file in binary or text mode.</span>
+</span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a>
+</span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a><span class="sd">    The filename argument can be an actual filename (a str or bytes object), or</span>
+</span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a><span class="sd">    an existing file object to read from or write to.</span>
+</span><span id="L-117"><a href="#L-117"><span class="linenos">117</span></a>
+</span><span id="L-118"><a href="#L-118"><span class="linenos">118</span></a><span class="sd">    The mode argument can be &quot;r&quot;, &quot;rb&quot;, &quot;w&quot;, &quot;wb&quot;, &quot;x&quot;, &quot;xb&quot;, &quot;a&quot; or &quot;ab&quot; for</span>
+</span><span id="L-119"><a href="#L-119"><span class="linenos">119</span></a><span class="sd">    binary mode, or &quot;rt&quot;, &quot;wt&quot;, &quot;xt&quot; or &quot;at&quot; for text mode. The default mode is</span>
+</span><span id="L-120"><a href="#L-120"><span class="linenos">120</span></a><span class="sd">    &quot;rb&quot;.</span>
+</span><span id="L-121"><a href="#L-121"><span class="linenos">121</span></a>
+</span><span id="L-122"><a href="#L-122"><span class="linenos">122</span></a><span class="sd">    For binary mode, this function is equivalent to the TinkFile constructor:</span>
+</span><span id="L-123"><a href="#L-123"><span class="linenos">123</span></a><span class="sd">    TinkFile(filename, mode, tink_key). In this case, the encoding, errors</span>
+</span><span id="L-124"><a href="#L-124"><span class="linenos">124</span></a><span class="sd">    and newline arguments must not be provided.</span>
+</span><span id="L-125"><a href="#L-125"><span class="linenos">125</span></a>
+</span><span id="L-126"><a href="#L-126"><span class="linenos">126</span></a><span class="sd">    For text mode, a TinkFile object is created, and wrapped in an</span>
+</span><span id="L-127"><a href="#L-127"><span class="linenos">127</span></a><span class="sd">    io.TextIOWrapper instance with the specified encoding, error handling</span>
+</span><span id="L-128"><a href="#L-128"><span class="linenos">128</span></a><span class="sd">    behavior, and line ending(s).</span>
+</span><span id="L-129"><a href="#L-129"><span class="linenos">129</span></a>
+</span><span id="L-130"><a href="#L-130"><span class="linenos">130</span></a><span class="sd">    Encryption is done by chunks to reduce memory footprint. The default</span>
+</span><span id="L-131"><a href="#L-131"><span class="linenos">131</span></a><span class="sd">    chunk_size is 64KB.</span>
+</span><span id="L-132"><a href="#L-132"><span class="linenos">132</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="L-133"><a href="#L-133"><span class="linenos">133</span></a>    <span class="k">return</span> <span class="n">_open_t</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+</span><span id="L-134"><a href="#L-134"><span class="linenos">134</span></a>         <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="n">newline</span><span class="p">,</span>
+</span><span id="L-135"><a href="#L-135"><span class="linenos">135</span></a>         <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+</span><span id="L-136"><a href="#L-136"><span class="linenos">136</span></a>         <span class="n">cryptor</span><span class="o">=</span><span class="s1">&#39;tink&#39;</span><span class="p">,</span> <span class="n">tink_key</span><span class="o">=</span><span class="n">tink_key</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -444,16 +445,17 @@ Losing this key means losing the data.</p>
 </span><span id="TinkCryptor-96"><a href="#TinkCryptor-96"><span class="linenos"> 96</span></a>        <span class="p">)</span>
 </span><span id="TinkCryptor-97"><a href="#TinkCryptor-97"><span class="linenos"> 97</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span> <span class="o">=</span> <span class="n">keyset_handle</span><span class="o">.</span><span class="n">primitive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_imp_tink_aead</span><span class="o">.</span><span class="n">Aead</span><span class="p">)</span>
 </span><span id="TinkCryptor-98"><a href="#TinkCryptor-98"><span class="linenos"> 98</span></a>
-</span><span id="TinkCryptor-99"><a href="#TinkCryptor-99"><span class="linenos"> 99</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">derive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">key_len</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">14</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_keys</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-</span><span id="TinkCryptor-100"><a href="#TinkCryptor-100"><span class="linenos">100</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Derive a key from password (experimental)</span>
-</span><span id="TinkCryptor-101"><a href="#TinkCryptor-101"><span class="linenos">101</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="TinkCryptor-102"><a href="#TinkCryptor-102"><span class="linenos">102</span></a>        <span class="k">return</span> <span class="kc">None</span>
-</span><span id="TinkCryptor-103"><a href="#TinkCryptor-103"><span class="linenos">103</span></a>
-</span><span id="TinkCryptor-104"><a href="#TinkCryptor-104"><span class="linenos">104</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
-</span><span id="TinkCryptor-105"><a href="#TinkCryptor-105"><span class="linenos">105</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;envelope_chunk&#39;</span><span class="p">)</span>
-</span><span id="TinkCryptor-106"><a href="#TinkCryptor-106"><span class="linenos">106</span></a>
-</span><span id="TinkCryptor-107"><a href="#TinkCryptor-107"><span class="linenos">107</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
-</span><span id="TinkCryptor-108"><a href="#TinkCryptor-108"><span class="linenos">108</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;envelope_chunk&#39;</span><span class="p">)</span>
+</span><span id="TinkCryptor-99"><a href="#TinkCryptor-99"><span class="linenos"> 99</span></a>    <span class="nd">@classmethod</span>
+</span><span id="TinkCryptor-100"><a href="#TinkCryptor-100"><span class="linenos">100</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">derive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">key_len</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">14</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_keys</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+</span><span id="TinkCryptor-101"><a href="#TinkCryptor-101"><span class="linenos">101</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Derive a key from password (experimental)</span>
+</span><span id="TinkCryptor-102"><a href="#TinkCryptor-102"><span class="linenos">102</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TinkCryptor-103"><a href="#TinkCryptor-103"><span class="linenos">103</span></a>        <span class="k">return</span> <span class="n">salt</span><span class="p">,</span> <span class="kc">None</span>
+</span><span id="TinkCryptor-104"><a href="#TinkCryptor-104"><span class="linenos">104</span></a>
+</span><span id="TinkCryptor-105"><a href="#TinkCryptor-105"><span class="linenos">105</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
+</span><span id="TinkCryptor-106"><a href="#TinkCryptor-106"><span class="linenos">106</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;envelope_chunk&#39;</span><span class="p">)</span>
+</span><span id="TinkCryptor-107"><a href="#TinkCryptor-107"><span class="linenos">107</span></a>
+</span><span id="TinkCryptor-108"><a href="#TinkCryptor-108"><span class="linenos">108</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk</span><span class="p">):</span>
+</span><span id="TinkCryptor-109"><a href="#TinkCryptor-109"><span class="linenos">109</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;envelope_chunk&#39;</span><span class="p">)</span>
 </span></pre></div>
 
 
@@ -512,7 +514,8 @@ Losing this key means losing the data.</p>
                             <div id="TinkCryptor.derive" class="classattr">
                                         <input id="TinkCryptor.derive-view-source" class="view-source-toggle-state" type="checkbox" aria-hidden="true" tabindex="-1">
 <div class="attr function">
-            
+                    <div class="decorator decorator-classmethod">@classmethod</div>
+
         <span class="def">def</span>
         <span class="name">derive</span><span class="signature pdoc-code condensed">(<span class="param"><span class="bp">self</span>, </span><span class="param"><span class="n">password</span>, </span><span class="param"><span class="n">salt</span><span class="o">=</span><span class="kc">None</span>, </span><span class="param"><span class="n">key_len</span><span class="o">=</span><span class="mi">64</span>, </span><span class="param"><span class="n">N</span><span class="o">=</span><span class="mi">16384</span>, </span><span class="param"><span class="n">r</span><span class="o">=</span><span class="mi">8</span>, </span><span class="param"><span class="n">p</span><span class="o">=</span><span class="mi">1</span>, </span><span class="param"><span class="n">num_keys</span><span class="o">=</span><span class="mi">1</span></span><span class="return-annotation">):</span></span>
 
@@ -520,10 +523,11 @@ Losing this key means losing the data.</p>
 
     </div>
     <a class="headerlink" href="#TinkCryptor.derive"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="TinkCryptor.derive-99"><a href="#TinkCryptor.derive-99"><span class="linenos"> 99</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">derive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">key_len</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">14</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_keys</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-</span><span id="TinkCryptor.derive-100"><a href="#TinkCryptor.derive-100"><span class="linenos">100</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Derive a key from password (experimental)</span>
-</span><span id="TinkCryptor.derive-101"><a href="#TinkCryptor.derive-101"><span class="linenos">101</span></a><span class="sd">        &quot;&quot;&quot;</span>
-</span><span id="TinkCryptor.derive-102"><a href="#TinkCryptor.derive-102"><span class="linenos">102</span></a>        <span class="k">return</span> <span class="kc">None</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="TinkCryptor.derive-99"><a href="#TinkCryptor.derive-99"><span class="linenos"> 99</span></a>    <span class="nd">@classmethod</span>
+</span><span id="TinkCryptor.derive-100"><a href="#TinkCryptor.derive-100"><span class="linenos">100</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">derive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">key_len</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">2</span> <span class="o">**</span> <span class="mi">14</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_keys</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+</span><span id="TinkCryptor.derive-101"><a href="#TinkCryptor.derive-101"><span class="linenos">101</span></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Derive a key from password (experimental)</span>
+</span><span id="TinkCryptor.derive-102"><a href="#TinkCryptor.derive-102"><span class="linenos">102</span></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="TinkCryptor.derive-103"><a href="#TinkCryptor.derive-103"><span class="linenos">103</span></a>        <span class="k">return</span> <span class="n">salt</span><span class="p">,</span> <span class="kc">None</span>
 </span></pre></div>
 
 
@@ -685,33 +689,33 @@ chunk_size is 64KB.</p>
 
     </div>
     <a class="headerlink" href="#open"></a>
-            <div class="pdoc-code codehilite"><pre><span></span><span id="open-110"><a href="#open-110"><span class="linenos">110</span></a><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">tink_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="open-111"><a href="#open-111"><span class="linenos">111</span></a>         <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="open-112"><a href="#open-112"><span class="linenos">112</span></a>         <span class="n">chunk_size</span><span class="o">=</span><span class="n">CHUNK_SIZE</span><span class="p">):</span>
-</span><span id="open-113"><a href="#open-113"><span class="linenos">113</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a Tink file in binary or text mode.</span>
-</span><span id="open-114"><a href="#open-114"><span class="linenos">114</span></a>
-</span><span id="open-115"><a href="#open-115"><span class="linenos">115</span></a><span class="sd">    The filename argument can be an actual filename (a str or bytes object), or</span>
-</span><span id="open-116"><a href="#open-116"><span class="linenos">116</span></a><span class="sd">    an existing file object to read from or write to.</span>
-</span><span id="open-117"><a href="#open-117"><span class="linenos">117</span></a>
-</span><span id="open-118"><a href="#open-118"><span class="linenos">118</span></a><span class="sd">    The mode argument can be &quot;r&quot;, &quot;rb&quot;, &quot;w&quot;, &quot;wb&quot;, &quot;x&quot;, &quot;xb&quot;, &quot;a&quot; or &quot;ab&quot; for</span>
-</span><span id="open-119"><a href="#open-119"><span class="linenos">119</span></a><span class="sd">    binary mode, or &quot;rt&quot;, &quot;wt&quot;, &quot;xt&quot; or &quot;at&quot; for text mode. The default mode is</span>
-</span><span id="open-120"><a href="#open-120"><span class="linenos">120</span></a><span class="sd">    &quot;rb&quot;.</span>
-</span><span id="open-121"><a href="#open-121"><span class="linenos">121</span></a>
-</span><span id="open-122"><a href="#open-122"><span class="linenos">122</span></a><span class="sd">    For binary mode, this function is equivalent to the TinkFile constructor:</span>
-</span><span id="open-123"><a href="#open-123"><span class="linenos">123</span></a><span class="sd">    TinkFile(filename, mode, tink_key). In this case, the encoding, errors</span>
-</span><span id="open-124"><a href="#open-124"><span class="linenos">124</span></a><span class="sd">    and newline arguments must not be provided.</span>
-</span><span id="open-125"><a href="#open-125"><span class="linenos">125</span></a>
-</span><span id="open-126"><a href="#open-126"><span class="linenos">126</span></a><span class="sd">    For text mode, a TinkFile object is created, and wrapped in an</span>
-</span><span id="open-127"><a href="#open-127"><span class="linenos">127</span></a><span class="sd">    io.TextIOWrapper instance with the specified encoding, error handling</span>
-</span><span id="open-128"><a href="#open-128"><span class="linenos">128</span></a><span class="sd">    behavior, and line ending(s).</span>
-</span><span id="open-129"><a href="#open-129"><span class="linenos">129</span></a>
-</span><span id="open-130"><a href="#open-130"><span class="linenos">130</span></a><span class="sd">    Encryption is done by chunks to reduce memory footprint. The default</span>
-</span><span id="open-131"><a href="#open-131"><span class="linenos">131</span></a><span class="sd">    chunk_size is 64KB.</span>
-</span><span id="open-132"><a href="#open-132"><span class="linenos">132</span></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="open-133"><a href="#open-133"><span class="linenos">133</span></a>    <span class="k">return</span> <span class="n">_open_t</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
-</span><span id="open-134"><a href="#open-134"><span class="linenos">134</span></a>         <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="n">newline</span><span class="p">,</span>
-</span><span id="open-135"><a href="#open-135"><span class="linenos">135</span></a>         <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
-</span><span id="open-136"><a href="#open-136"><span class="linenos">136</span></a>         <span class="n">cryptor</span><span class="o">=</span><span class="s1">&#39;tink&#39;</span><span class="p">,</span> <span class="n">tink_key</span><span class="o">=</span><span class="n">tink_key</span><span class="p">)</span>
+            <div class="pdoc-code codehilite"><pre><span></span><span id="open-111"><a href="#open-111"><span class="linenos">111</span></a><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;rb&quot;</span><span class="p">,</span> <span class="n">tink_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="open-112"><a href="#open-112"><span class="linenos">112</span></a>         <span class="n">encoding</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="open-113"><a href="#open-113"><span class="linenos">113</span></a>         <span class="n">chunk_size</span><span class="o">=</span><span class="n">CHUNK_SIZE</span><span class="p">):</span>
+</span><span id="open-114"><a href="#open-114"><span class="linenos">114</span></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a Tink file in binary or text mode.</span>
+</span><span id="open-115"><a href="#open-115"><span class="linenos">115</span></a>
+</span><span id="open-116"><a href="#open-116"><span class="linenos">116</span></a><span class="sd">    The filename argument can be an actual filename (a str or bytes object), or</span>
+</span><span id="open-117"><a href="#open-117"><span class="linenos">117</span></a><span class="sd">    an existing file object to read from or write to.</span>
+</span><span id="open-118"><a href="#open-118"><span class="linenos">118</span></a>
+</span><span id="open-119"><a href="#open-119"><span class="linenos">119</span></a><span class="sd">    The mode argument can be &quot;r&quot;, &quot;rb&quot;, &quot;w&quot;, &quot;wb&quot;, &quot;x&quot;, &quot;xb&quot;, &quot;a&quot; or &quot;ab&quot; for</span>
+</span><span id="open-120"><a href="#open-120"><span class="linenos">120</span></a><span class="sd">    binary mode, or &quot;rt&quot;, &quot;wt&quot;, &quot;xt&quot; or &quot;at&quot; for text mode. The default mode is</span>
+</span><span id="open-121"><a href="#open-121"><span class="linenos">121</span></a><span class="sd">    &quot;rb&quot;.</span>
+</span><span id="open-122"><a href="#open-122"><span class="linenos">122</span></a>
+</span><span id="open-123"><a href="#open-123"><span class="linenos">123</span></a><span class="sd">    For binary mode, this function is equivalent to the TinkFile constructor:</span>
+</span><span id="open-124"><a href="#open-124"><span class="linenos">124</span></a><span class="sd">    TinkFile(filename, mode, tink_key). In this case, the encoding, errors</span>
+</span><span id="open-125"><a href="#open-125"><span class="linenos">125</span></a><span class="sd">    and newline arguments must not be provided.</span>
+</span><span id="open-126"><a href="#open-126"><span class="linenos">126</span></a>
+</span><span id="open-127"><a href="#open-127"><span class="linenos">127</span></a><span class="sd">    For text mode, a TinkFile object is created, and wrapped in an</span>
+</span><span id="open-128"><a href="#open-128"><span class="linenos">128</span></a><span class="sd">    io.TextIOWrapper instance with the specified encoding, error handling</span>
+</span><span id="open-129"><a href="#open-129"><span class="linenos">129</span></a><span class="sd">    behavior, and line ending(s).</span>
+</span><span id="open-130"><a href="#open-130"><span class="linenos">130</span></a>
+</span><span id="open-131"><a href="#open-131"><span class="linenos">131</span></a><span class="sd">    Encryption is done by chunks to reduce memory footprint. The default</span>
+</span><span id="open-132"><a href="#open-132"><span class="linenos">132</span></a><span class="sd">    chunk_size is 64KB.</span>
+</span><span id="open-133"><a href="#open-133"><span class="linenos">133</span></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="open-134"><a href="#open-134"><span class="linenos">134</span></a>    <span class="k">return</span> <span class="n">_open_t</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+</span><span id="open-135"><a href="#open-135"><span class="linenos">135</span></a>         <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="n">errors</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="n">newline</span><span class="p">,</span>
+</span><span id="open-136"><a href="#open-136"><span class="linenos">136</span></a>         <span class="n">chunk_size</span><span class="o">=</span><span class="n">chunk_size</span><span class="p">,</span>
+</span><span id="open-137"><a href="#open-137"><span class="linenos">137</span></a>         <span class="n">cryptor</span><span class="o">=</span><span class="s1">&#39;tink&#39;</span><span class="p">,</span> <span class="n">tink_key</span><span class="o">=</span><span class="n">tink_key</span><span class="p">)</span>
 </span></pre></div>
 
 
