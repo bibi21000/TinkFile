@@ -39,6 +39,7 @@ tests:
 	./venv/bin/pytest  --random-order -n auto --ignore=tests/test_benchmark.py tests/
 
 release:
+	-make doc && git commit -m "Update doc" docs/
 	-git push
 	gh release create v${VERSION}
 

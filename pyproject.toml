@@ -1,6 +1,6 @@
 [project]
 name = "tinkfile"
-version = "0.0.2"
+version = "0.0.3"
 requires-python = ">= 3.9"
 readme = "README.md"
 description = "A python xxxFile like ( ie GzipFile, BZ2File, ...) for manipulating Tink encrypted files."
